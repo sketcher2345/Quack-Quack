@@ -1,21 +1,15 @@
 import pandas as pd
 import os
 
-def split_csv_with_pandas(input_filepath, rows_per_file=5000):
-    """
-    Splits a large CSV file into smaller chunks using the pandas library.
-    """
-    # Check if the input file exists
+def split_csv_with_pandas(input_filepath, rows_per_file=2000):
     if not os.path.exists(input_filepath):
         print(f"Error: The file '{input_filepath}' was not found.")
         return
 
-    # Create a directory to store the output files
     output_dir = "split_output_files"
     os.makedirs(output_dir, exist_ok=True)
     print(f"Output files will be saved in the '{output_dir}' directory.")
 
-    # Create a chunk iterator
     # This reads the CSV in chunks without loading the whole file into memory
     try:
         chunk_iterator = pd.read_csv(input_filepath, chunksize=rows_per_file)
@@ -34,6 +28,6 @@ def split_csv_with_pandas(input_filepath, rows_per_file=5000):
 
 if __name__ == "__main__":
     large_csv_path = "binary_combinations.csv" 
-    num_rows_per_file = 5000
+    num_rows_per_file = 2000
     
     split_csv_with_pandas(large_csv_path, num_rows_per_file)
