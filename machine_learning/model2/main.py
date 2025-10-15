@@ -36,4 +36,3 @@ def allocate_rooms(teams, rooms, output_file="room_allocation.csv"):
 
     return allocation_df
 
-result = allocate_rooms("team2 (2).csv", "room2 (2).csv")
