@@ -1,0 +1,138 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RegistrationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// User model for participants (Google OAuth)
+model User {
+  id    String @id @default(cuid())
+  email String @unique
+  name  String?
+  image String?
+
+  // Relations
+  registrations RegistrationParticipant[]
+  teams         TeamMember[]
+}
+
+// Host model for hackathon organizers (manual creation)
+model Host {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  hackathons Hackathon[]
+}
+
+model Hackathon {
+  id                   String   @id @default(cuid())
+  name                 String
+  body                 String // Markdown content
+  logoUrl              String
+  bannerUrl            String
+  teamSize             Int
+  startDate            DateTime
+  durationHours        Int
+  registrationDeadline DateTime
+  supportEmail         String
+
+  hostId String
+  host   Host   @relation(fields: [hostId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  registrations Registration[]
+  teams         Team[]
+}
+
+// A single registration application, can be for a team or individual
+model Registration {
+  id          String   @id @default(cuid())
+  hackathonId String
+  hackathon   Hackathon @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+
+  teamName  String? // Null for individuals, populated for teams
+  status    RegistrationStatus @default(PENDING)
+  createdAt DateTime           @default(now())
+
+  // Relations
+  participants RegistrationParticipant[]
+}
+
+// Links a User to a Registration with their specific details for that event
+model RegistrationParticipant {
+  id             String       @id @default(cuid())
+  registrationId String
+  registration   Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Details for this specific hackathon application
+  githubUrl    String
+  portfolioUrl String?
+  college      String
+  year         Int
+
+  @@unique([registrationId, userId]) // A user can only be in one registration per hackathon
+}
+
+// Represents an APPROVED and finalized team for a hackathon
+model Team {
+  id          String   @id @default(cuid())
+  name        String
+  bio         String?
+  skills      String? // Could be comma-separated or JSON
+  hackathonId String
+  hackathon   Hackathon @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+
+  // Relations
+  members     TeamMember[]
+  submission  ProjectSubmission?
+}
+
+// Links a User to a finalized Team
+model TeamMember {
+  id     String @id @default(cuid())
+  teamId String
+  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+}
+
+model ProjectSubmission {
+  id        String   @id @default(cuid())
+  teamId    String   @unique // Each team has only one submission
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  title     String
+  about     String
+  problem   String
+  githubUrl String
+  techStacks String[] // Array of strings
+  aiScore   Float?
+  createdAt DateTime @default(now())
+}
