@@ -4,9 +4,10 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '@/app/context/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import Link from 'next/link';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-
+import { Button } from '@/components/ui/button';
 // Define a type for the hackathon data we expect from the API
 interface Hackathon {
   id: string;
@@ -64,20 +65,28 @@ export default function HackathonList() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {hackathons.map((hackathon) => (
-            <Card key={hackathon.id}>
-              <CardHeader>
-                <CardTitle>{hackathon.name}</CardTitle>
-                <CardDescription>
-                  Starts: {new Date(hackathon.startDate).toLocaleDateString()}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <p>Registration Closes: {new Date(hackathon.registrationDeadline).toLocaleDateString()}</p>
-                  {/* We can add status badges later */}
-                  <Badge>Upcoming</Badge> 
-                </div>
-              </CardContent>
+            <Card key={hackathon.id} className="flex flex-col justify-between">
+              <div> {/* Wrapper to keep footer at bottom */}
+                <CardHeader>
+                  <CardTitle>{hackathon.name}</CardTitle>
+                  <CardDescription>
+                    Starts: {new Date(hackathon.startDate).toLocaleDateString()}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <p>Registration Closes: {new Date(hackathon.registrationDeadline).toLocaleDateString()}</p>
+                    <Badge>Upcoming</Badge> 
+                  </div>
+                </CardContent>
+              </div>
+              <CardFooter>
+                <Link href={`/dashboard/hackathon/${hackathon.id}/edit`} legacyBehavior>
+                  <a className="w-full">
+                    <Button variant="secondary" className="w-full">Manage</Button>
+                  </a>
+                </Link>
+              </CardFooter>
             </Card>
           ))}
         </div>
