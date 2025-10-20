@@ -55,6 +55,7 @@ model Hackathon {
   durationHours        Int
   registrationDeadline DateTime
   supportEmail         String
+  isRegistrationOpen   Boolean    @default(true)
 
   hostId String
   host   Host   @relation(fields: [hostId], references: [id], onDelete: Cascade)
