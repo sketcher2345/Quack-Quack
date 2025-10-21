@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prismaClient } from 'db/client';
 import { jwtVerify } from 'jose';
+import { transporter, createApprovalEmail, createRejectionEmail } from '@/lib/nodemailer';
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET);
 
@@ -33,7 +34,10 @@ export async function PUT(req: NextRequest, { params }: { params: { registration
                 hostId: hostId,
             },
         },
-        include: { participants: true } // Include participants for team creation
+        include: {
+            participants: { include: { user: true } },
+            hackathon: { select: { name: true } }
+        }
     });
     
     if (!registration) {
@@ -69,6 +73,23 @@ export async function PUT(req: NextRequest, { params }: { params: { registration
     });
 
     // We will handle Nodemailer email notifications here in a future step.
+    const hackathonName = registration.hackathon.name;
+    const recipientEmails = registration.participants.map(p => p.user.email);
+    const emailTemplate = status === 'APPROVED' 
+        ? createApprovalEmail(hackathonName) 
+        : createRejectionEmail(hackathonName);
+
+    try {
+        await transporter.sendMail({
+            from: `"${process.env.EMAIL_FROM_NAME}" <${process.env.EMAIL_FROM}>`,
+            to: recipientEmails.join(', '), // Nodemailer can send to multiple recipients
+            subject: emailTemplate.subject,
+            html: emailTemplate.html,
+        });
+    } catch (emailError) {
+        console.error("Failed to send notification email:", emailError);
+        // We log the error but don't fail the request. The host's action was successful.
+    }
 
     return NextResponse.json({ message: `Registration ${status.toLowerCase()}` }, { status: 200 });
 
