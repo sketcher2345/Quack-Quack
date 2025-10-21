@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import WinnerAnnouncer from '@/components/WinnerAnnouncer';
 import {
   Card,
   CardContent,
@@ -47,6 +48,7 @@ export default function EditHackathonPage() {
     durationHours: number;
     registrationDeadline: string;
     supportEmail: string;
+    actualStartTime: string | null;
     isRegistrationOpen: boolean;
     status: "UPCOMING" | "LIVE" | "ENDED";
   }>({
@@ -59,6 +61,7 @@ export default function EditHackathonPage() {
     registrationDeadline: "",
     supportEmail: "",
     isRegistrationOpen: true,
+    actualStartTime: null,
     status: "UPCOMING",
   });
 
@@ -104,6 +107,11 @@ export default function EditHackathonPage() {
   const handleHackathonStateChange = (updatedHackathon: any) => {
     setHackathonData((prev) => ({ ...prev, ...updatedHackathon }));
   };
+  const handleWinnersAnnounced = () => {
+        // Simply update the status locally to 'ENDED' to refresh the UI
+        setHackathonData(prev => ({ ...prev, status: 'ENDED' }));
+    };
+    const isHackathonOver = new Date() > new Date(new Date(hackathonData.actualStartTime!).getTime() + hackathonData.durationHours * 60 * 60 * 1000);
   // Handler for submitting the form to update hackathon details
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -280,6 +288,13 @@ export default function EditHackathonPage() {
         hackathonId={hackathonId as string}
         isRegistrationOpen={hackathonData.isRegistrationOpen}
       />
+      {(hackathonData.status === 'LIVE' && isHackathonOver) || hackathonData.status === 'ENDED' ? (
+        <WinnerAnnouncer
+          hackathonId={hackathonId as string}
+          onWinnersAnnounced={handleWinnersAnnounced}
+        />
+      ) : null}
+      
     </main>
   );
 }
