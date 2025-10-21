@@ -20,6 +20,12 @@ enum RegistrationStatus {
   REJECTED
 }
 
+enum HackathonStatus {
+  UPCOMING
+  LIVE
+  ENDED
+}
+
 // User model for participants (Google OAuth)
 model User {
   id    String @id @default(cuid())
@@ -56,6 +62,8 @@ model Hackathon {
   registrationDeadline DateTime
   supportEmail         String
   isRegistrationOpen   Boolean    @default(true)
+  status               HackathonStatus @default(UPCOMING) // <-- ADD THIS
+  actualStartTime      DateTime?
 
   hostId String
   host   Host   @relation(fields: [hostId], references: [id], onDelete: Cascade)
