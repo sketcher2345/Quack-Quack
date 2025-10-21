@@ -119,6 +119,7 @@ model Team {
 
   // Relations
   members     TeamMember[]
+  rank        Int? 
   submission  ProjectSubmission?
 }
 
