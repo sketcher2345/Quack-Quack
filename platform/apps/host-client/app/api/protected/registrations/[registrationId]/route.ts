@@ -1,6 +1,6 @@
 // apps/host-client/app/api/protected/registrations/[registrationId]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { prismaClient } from 'db';
+import { prismaClient } from 'db/client';
 import { jwtVerify } from 'jose';
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET);

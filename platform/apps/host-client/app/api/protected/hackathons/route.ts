@@ -1,6 +1,6 @@
 // apps/host-client/app/api/protected/hackathons/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { prismaClient } from 'db';
+import { prismaClient } from 'db/client';
 import { jwtVerify } from 'jose'; // We'll use this to get the hostId from the token
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET);
@@ -13,7 +13,7 @@ interface HostJWTPayload {
   exp: number;
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     // 1. Get the token from the Authorization header (already checked by middleware, but we need the payload)
     const authHeader = req.headers.get('authorization');
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
     const authHeader = req.headers.get('authorization');
     const token = authHeader?.split(' ')[1];

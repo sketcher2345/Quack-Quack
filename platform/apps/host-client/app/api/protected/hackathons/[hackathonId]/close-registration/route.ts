@@ -1,6 +1,6 @@
 // apps/host-client/app/api/protected/hackathons/[hackathonId]/close-registration/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { prismaClient } from 'db';
+import { prismaClient } from 'db/client';
 import { jwtVerify } from 'jose';
 import Papa from 'papaparse';
 

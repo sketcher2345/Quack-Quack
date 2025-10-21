@@ -1,6 +1,6 @@
 // apps/host-client/app/api/protected/hackathons/[hackathonId]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { prismaClient } from 'db';
+import { prismaClient } from 'db/client';
 import { jwtVerify } from 'jose';
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET);
@@ -24,7 +24,7 @@ async function getHostIdFromToken(req: NextRequest): Promise<string | null> {
 }
 
 // --- GET Handler: Fetch a single hackathon by its ID ---
-export async function GET(req: NextRequest, { params }: { params: { hackathonId: string } }) {
+export async function GET(req: NextRequest, { params }: { params: { hackathonId: string } }) : Promise<NextResponse> {
   const hostId = await getHostIdFromToken(req);
   if (!hostId) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
