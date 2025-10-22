@@ -2,31 +2,32 @@ import csv
 import io
 
 def evaluate_candidate(name, skills):
-    # 1️⃣ Hardcoded skill scores
+    # 1️⃣ Updated skill scores according to new library
     skill_scores = {
-        "React": 8,
-        "Next.js": 9,
-        "Javascript/Typescript": 10,
-        "Express.js": 7,
-        "Python": 9,
-        "Flask/FastAPI": 8,
-        "PostgreSQL/MongoDB": 8,
-        "AWS": 9,
-        "GCP": 8,
-        "Azure": 8,
-        "Tensorflow/Pytorch": 9,
-        "OpenCV": 7,
-        "Prisma": 6,
-        "TailwindCss": 6,
-        "Recoil": 5,
-        "Redux": 7,
-        "TanStack Query": 6,
-        "Zustand": 5,
-        "Socket.io": 7,
-        "Hono.js": 5
+        "React": 5.5,
+        "Next.js": 6.5,
+        "Javascript/Typescript": 7.0,
+        "Express.js": 4.5,
+        "Python": 6.5,
+        "Flask/FastAPI": 5.0,
+        "PostgreSQL/MongoDB": 5.0,
+        "AWS": 6.5,
+        "GCP": 5.0,
+        "Azure": 4.5,
+        "Tensorflow/Pytorch": 6.5,
+        "OpenCV": 4.0,
+        "Prisma": 3.5,
+        "TailwindCss": 3.5,
+        "Recoil": 3.0,
+        "Redux": 4.5,
+        "TanStack Query": 3.5,
+        "Zustand": 3.0,
+        "Socket.io": 4.5,
+        "Hono.js": 3.0
     }
 
-    # 2️⃣ Primary language dictionary
+    # ...existing code...
+    # 2️⃣ Primary language dictionary remains the same
     primary_languages = {
         "java": "a",
         "c": "b",
@@ -34,23 +35,21 @@ def evaluate_candidate(name, skills):
         "Javascript/Typescript": "d"
     }
 
-    # 3️⃣ Initialize variables
+    # Rest of the code remains the same
     total_score = 0
     eligible_to = ""
 
-    # 4️⃣ Calculate total score
     for skill in skills:
         if skill in skill_scores:
             total_score += skill_scores[skill]
 
-    # 5️⃣ Determine eligibility
     for lang, code in primary_languages.items():
         if any(lang.lower() in s.lower() for s in skills):
             eligible_to += code
 
-    # 6️⃣ Return results
     return name, total_score, eligible_to
 
+# ...existing code...
 
 # ⚙️ Example use case
 def generate_candidate_csv(name, skills):
