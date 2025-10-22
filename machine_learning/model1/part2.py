@@ -6,15 +6,16 @@ import os
 import sys
 from collections import defaultdict
 
-def form_teams_from_csv(csv_content: str, score_threshold: int = 60, chunk_size: int = 5, min_team_size: int = 4) -> str:
+def form_teams_from_csv(csv_content: str, score_threshold: int = 300, chunk_size: int = 5) -> str:
     """
-    Forms teams based on candidate scores and Eligible_To groups.
+    Forms teams of exactly `chunk_size` members (default 5) per group code.
 
-    Each candidate is assigned to at most one group: the first code listed in their
-    Eligible_To field (after splitting). Candidates with score < score_threshold are skipped.
-
-    This function also prints names of candidates who passed the threshold but were not
-    included in any emitted team (leftovers).
+    Rules:
+    - Candidates are NOT filtered by any per-candidate threshold.
+    - Candidates are grouped by the first code in their Eligible_To.
+    - Teams are emitted only for full groups of `chunk_size` members whose
+      summed skill score is >= score_threshold (default 300).
+    - Partial groups (fewer than chunk_size members) are ignored (leftovers).
     """
     reader = csv.DictReader(io.StringIO(csv_content))
     groups = defaultdict(list)
@@ -30,22 +31,17 @@ def form_teams_from_csv(csv_content: str, score_threshold: int = 60, chunk_size:
         if name_key in entries:
             continue
 
-        score_raw = (row.get("Skill_Score") or row.get("Skill_Score".lower()) or row.get("score") or "").strip()
+        score_raw = (row.get("Skill_Score") or row.get("skill_score") or row.get("score") or "").strip()
         try:
-            score = int(float(score_raw))
+            score = float(score_raw)
         except (ValueError, TypeError):
-            # record as not assigned (invalid score) but don't include in leftovers (didn't pass threshold)
+            # invalid score: record but don't add to groups
             entries[name_key] = {"name": name, "score": None, "assigned_code": None, "allocated": False}
-            continue
-
-        # apply threshold filter here -- candidates below threshold are not considered for teams
-        if score < score_threshold:
-            entries[name_key] = {"name": name, "score": score, "assigned_code": None, "allocated": False}
             continue
 
         eligible_raw = (row.get("Eligible_To") or row.get("eligible_to") or row.get("Eligible") or "").strip()
         if not eligible_raw:
-            # passed threshold but no eligible group -> leftover
+            # has score but no eligible group -> leftover
             entries[name_key] = {"name": name, "score": score, "assigned_code": None, "allocated": False}
             continue
 
@@ -73,31 +69,38 @@ def form_teams_from_csv(csv_content: str, score_threshold: int = 60, chunk_size:
         groups[assigned_code].append({"name": name, "score": score})
         entries[name_key] = {"name": name, "score": score, "assigned_code": assigned_code, "allocated": False}
 
-    # create teams and mark allocated members
+    # create teams of exactly chunk_size and mark allocated members only if group sum >= threshold
     team_rows = []
     for code in sorted(groups.keys()):
         members = groups[code]
         if not members:
             continue
-        members.sort(key=lambda m: m["score"], reverse=True)
+        members.sort(key=lambda m: m["score"] if m["score"] is not None else -1, reverse=True)
 
         team_num = 1
         for i in range(0, len(members), chunk_size):
             chunk = members[i:i + chunk_size]
-            if len(chunk) < min_team_size:
-                # these members won't be emitted as a team -> remain unallocated (leftovers)
+            # Only consider full chunks of exactly chunk_size
+            if len(chunk) != chunk_size:
                 continue
-            names = "  ".join(m["name"] for m in chunk)
-            scores = "  ".join(str(m["score"]) for m in chunk)
-            team_rows.append({
-                "team_id": f"Team_{code.upper()}{team_num}",
-                "participant_names": names,
-                "score_list": scores
-            })
-            # mark allocated
-            for m in chunk:
-                entries[m["name"].lower()]["allocated"] = True
-            team_num += 1
+            # compute total score for the chunk
+            total = sum(m["score"] for m in chunk if isinstance(m.get("score"), (int, float)))
+            if total >= score_threshold:
+                names = "  ".join(m["name"] for m in chunk)
+                # format scores with no unnecessary decimals
+                scores = "  ".join(str(int(s["score"])) if float(s["score"]).is_integer() else f"{s['score']:.2f}" for s in chunk)
+                team_rows.append({
+                    "team_id": f"Team_{code.upper()}{team_num}",
+                    "participant_names": names,
+                    "score_list": scores
+                })
+                # mark allocated
+                for m in chunk:
+                    entries[m["name"].lower()]["allocated"] = True
+                team_num += 1
+            else:
+                # do not allocate these members; they remain leftovers
+                continue
 
     out = io.StringIO()
     writer = csv.DictWriter(out, fieldnames=["team_id", "participant_names", "score_list"])
@@ -105,14 +108,14 @@ def form_teams_from_csv(csv_content: str, score_threshold: int = 60, chunk_size:
     writer.writerows(team_rows)
     csv_result = out.getvalue()
 
-    # Compute leftovers: passed threshold (score is int) but not allocated to any emitted team
-    leftovers = [e["name"] for e in entries.values() if isinstance(e.get("score"), (int, float)) and e.get("score") >= score_threshold and not e.get("allocated")]
+    # Compute leftovers: any candidate with a numeric score who was not allocated
+    leftovers = [e["name"] for e in entries.values() if isinstance(e.get("score"), (int, float)) and not e.get("allocated")]
     if leftovers:
-        print("\nLeftover candidates (passed threshold but not assigned to any emitted team):")
+        print("\nLeftover candidates (not assigned to any emitted team):")
         for n in leftovers:
             print(f"- {n}")
     else:
-        print("\nAll eligible candidates were assigned to teams.")
+        print("\nAll candidates with valid scores were assigned to teams (if possible).")
 
     return csv_result
 
@@ -120,9 +123,8 @@ def form_teams_from_csv(csv_content: str, score_threshold: int = 60, chunk_size:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Create final teams CSV from candidate_results CSV")
     parser.add_argument("-i", "--input-file", required=True, help="Path to candidate_results CSV")
-    parser.add_argument("-t", "--threshold", type=int, default=60, help="Score threshold (default: 60)")
-    parser.add_argument("-c", "--chunk-size", type=int, default=5, help="Chunk size when forming teams (default: 5)")
-    parser.add_argument("-m", "--min-team-size", type=int, default=4, help="Minimum members to emit a team (default: 4)")
+    parser.add_argument("-t", "--threshold", type=int, default=300, help="Team score threshold (default: 300)")
+    parser.add_argument("-c", "--chunk-size", type=int, default=5, help="Exact team size when forming teams (default: 5)")
     parser.add_argument("-o", "--output-file", default="final_teams.csv", help="Output CSV path (default: final_teams.csv)")
     args = parser.parse_args()
 
@@ -133,7 +135,7 @@ if __name__ == "__main__":
     with open(args.input_file, "r", encoding="utf-8") as f:
         csv_input = f.read()
 
-    csv_output = form_teams_from_csv(csv_input, score_threshold=args.threshold, chunk_size=args.chunk_size, min_team_size=args.min_team_size)
+    csv_output = form_teams_from_csv(csv_input, score_threshold=args.threshold, chunk_size=args.chunk_size)
 
     try:
         with open(args.output_file, "w", encoding="utf-8", newline="") as f:
