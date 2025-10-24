@@ -65,8 +65,33 @@ def generate_candidate_csv(name, skills):
 
 
 # 🧪 Example test
+# ...existing code...
+
 if __name__ == "__main__":
-    candidate_name = "Anish"
-    candidate_skills = ["Python", "Flask/FastAPI", "AWS", "Javascript/Typescript"]
-    csv_output = generate_candidate_csv(candidate_name, candidate_skills)
-    print(csv_output)
+    # Sample candidate data
+    test_candidates = [
+        ("Anish", ["Python", "Flask/FastAPI", "AWS", "Javascript/Typescript"]),
+        ("Priya", ["React", "Next.js", "Javascript/Typescript", "TailwindCss"]),
+        ("Rajesh", ["Java", "AWS", "PostgreSQL/MongoDB"]),
+        ("Sarah", ["Python", "Tensorflow/Pytorch", "GCP", "OpenCV"]),
+        ("Amit", ["C", "Socket.io", "Express.js"])
+    ]
+
+    # Generate CSV for each candidate
+    print("Generating CSVs for multiple candidates:")
+    print("-" * 50)
+    
+    for name, skills in test_candidates:
+        print(f"\nCandidate: {name}")
+        print(f"Skills: {', '.join(skills)}")
+        print("Generated CSV:")
+        csv_output = generate_candidate_csv(name, skills)
+        print(csv_output)
+        print("-" * 50)
+
+    # Optionally save to file
+    with open("candidates.csv", "w", newline="") as f:
+        f.write("Name,Skill_Score,Eligible_To\n")
+        for name, skills in test_candidates:
+            _, score, eligible = evaluate_candidate(name, skills)
+            f.write(f"{name},{score},{eligible}\n")
